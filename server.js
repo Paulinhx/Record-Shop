@@ -23,7 +23,7 @@ const app = express()
 const port = process.env.PORT || 5000
 app.use (express.json())
 
-
+// 
 app.get('/get', (req, res, next)=>{
     const { records } = db.data
     res.status(200).send(records)
@@ -35,7 +35,6 @@ app.post('/post', async (req, res, next)=>{
     await db.write();
     res.status(200).send(records)
 })
-
 
 
 
