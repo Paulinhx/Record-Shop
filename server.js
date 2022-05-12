@@ -1,44 +1,53 @@
-import express from 'express'
-import cors from  'cors'
-import logger from "morgan"
+import express from "express";
+import logger from "morgan";
+import cors from "cors";
 
-//DB-------------------
+import ordersRouter from "./routes/orders.js";
+import recordsRouter from "./routes/records.js";
+import usersRouter from "./routes/users.js";
+
+//DB -----------------------------
 //lowdb
-import { join, dirname } from 'path'
-import { Low, JSONFile } from 'lowdb'
-import { fileURLToPath } from 'url'
+// import { join, dirname } from "path";
+// import { Low, JSONFile } from "lowdb";
+// import { fileURLToPath } from "url";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
+//const __dirname = dirname(fileURLToPath(import.meta.url));
 
 //Use JSON file for storage
-const file = join(__dirname, "db.json");
+// const file = join(__dirname, "db.json");
 
-const adapter = new JSONFile(file);
-const db = new Low(adapter);
-await db.read();
-db.data ||= { records: [] };
+// const adapter = new JSONFile(file);
+// const db = new Low(adapter);
+// await db.read();
+// db.data ||= { records: [], users: [], orders: [] };
 
-const app = express()
-const port = process.env.PORT || 5000
-app.use (express.json())
+//------------------------------------------
+const app = express();
+const port = process.env.PORT || 5000;
 
-// 
-app.get('/get', (req, res, next)=>{
-    const { records } = db.data
-    res.status(200).send(records)
-})
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(logger("dev"));
 
-app.post('/post', async (req, res, next)=>{
-    const { records } = db.data
-    records.push(req.body.test)
-    await db.write();
-    res.status(200).send(records)
-})
+//ROUTES
 
+app.use("/orders", ordersRouter);
+//http://localhost:5000/records
+app.use("/records", recordsRouter);
+app.use("/users", usersRouter); // This is a middleware
 
+//GLOBAL ERROR HANDLER
+app.use((err, req, res, next) => {
+  res.status(err.status || 500);
+  res.json({
+    error: {
+      message: err.message,
+    },
+  });
+});
 
-
-app.listen(port, ()=>{
-    console.log("listening on port" + port);
+app.listen(port, () => {
+  console.log("Listening on port: ", port);
 });
