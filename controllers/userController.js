@@ -1,67 +1,32 @@
+import userModel from "../models/userModel.js";
 
-//DB -----------------------------
-//lowdb
-import { join, dirname } from "path";
-import { Low, JSONFile } from "lowdb";
-import { fileURLToPath } from "url";
+import { validationResult } from "express-validator";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-//Use JSON file for storage
-const file = join(__dirname, "../db.json");
-
-const adapter = new JSONFile(file);
-const db = new Low(adapter);
-await db.read();
-db.data ||= { records: [], users: [], orders: [] };
-
-//------------------------------------------
-
-//Controllers
-
-export const getUsers = (req, res, next) => {
-  const { users } = db.data;
-  res.status(200).json(users);
-};
-
-export const getUser = async (req, res, next) => {
-  const { users } = db.data;
-  let myId = await users.find((v) => v.id === req.params.id);
-
-  res.status(200).json(myId);
-};
-
-export const deleteUser = async (req, res, next) => {
-  const { users } = db.data;
-  //   let myId = await users.find((v) => v.id === req.params.id);
-  const removeIndex = users.findIndex((item) => item.id === req.params.id);
-
-  if (removeIndex != -1) {
-    users.splice(removeIndex, 1);
+export const getUsers = async (req, res) => {
+  try {
+    const result = await userModel.find().select("firstName").sort("firstName");
+    res.status(200).json(result);
+  } catch (error) {
+    console.log(error);
   }
-  await db.write();
-  res.status(200).send(db.data);
 };
 
-export const updateUser = async (req, res, next) => {
-  const { users } = db.data;
-  let user = await users.find((v) => v.id === req.params.id);
+export const createUser = async (req, res) => {
+  const user = req.body;
 
-  const { firstName, lastName, email, password } = req.body;
-  user.firstName = firstName;
-  user.lastName = lastName;
-  user.email = email;
-  user.password = password;
+  try {
+    const errors = validationResult(req);
 
-  await db.write();
-  res.status(200).json(user);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({
+        errors: errors.array().map((err) => err.msg),
+      });
+    }
+
+    const newUser = new userModel(user);
+    await newUser.save();
+    res.status(201).json(newUser);
+  } catch (error) {
+    res.status(409).json({ msg: error.message });
+  }
 };
-
-export const addUser = async (req, res, next) => {
-  const { users } = db.data;
-  console.log(users);
-  users.push({ ...req.body, id: Date.now().toString() });
-  await db.write();
-  res.status(200).send(users);
-};
-

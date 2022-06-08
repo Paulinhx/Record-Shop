@@ -1,53 +1,26 @@
 import express from "express";
-import logger from "morgan";
+import mongoose from "mongoose";
 import cors from "cors";
+import dotenv from "dotenv";
 
-import ordersRouter from "./routes/orders.js";
-import recordsRouter from "./routes/records.js";
-import usersRouter from "./routes/users.js";
+import usersRouter from "./routes/usersRouter.js";
 
-//DB -----------------------------
-//lowdb
-// import { join, dirname } from "path";
-// import { Low, JSONFile } from "lowdb";
-// import { fileURLToPath } from "url";
-
-//const __dirname = dirname(fileURLToPath(import.meta.url));
-
-//Use JSON file for storage
-// const file = join(__dirname, "db.json");
-
-// const adapter = new JSONFile(file);
-// const db = new Low(adapter);
-// await db.read();
-// db.data ||= { records: [], users: [], orders: [] };
-
-//------------------------------------------
 const app = express();
-const port = process.env.PORT || 5000;
 
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(logger("dev"));
+app.use(cors());
+dotenv.config();
 
-//ROUTES
+const PORT = process.env.PORT;
 
-app.use("/orders", ordersRouter);
-//http://localhost:5000/records
-app.use("/records", recordsRouter);
-app.use("/users", usersRouter); // This is a middleware
+app.use("/", usersRouter);
 
-//GLOBAL ERROR HANDLER
-app.use((err, req, res, next) => {
-  res.status(err.status || 500);
-  res.json({
-    error: {
-      message: err.message,
-    },
-  });
-});
-
-app.listen(port, () => {
-  console.log("Listening on port: ", port);
-});
+mongoose
+  .connect(process.env.CONNECTION_URL)
+  .then(() =>
+    app.listen(PORT, () =>
+      console.log(`Database connected and server running on port: `, PORT),
+    ),
+  )
+  .catch((error) => console.log(error));
